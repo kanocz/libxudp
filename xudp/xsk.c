@@ -262,6 +262,12 @@ static struct xdp_umem *__umem_configure(xudp *x, int sfd, u32 size,
 		mr.flags = XDP_UMEM_UNALIGNED_CHUNK_FLAG;
 #endif
 
+#ifdef HW_TX_CSUM
+
+	mr.tx_metadata_len = sizeof(struct xsk_tx_metadata);
+
+#endif // HW_TX_CSUM
+
 	loginfo(x->log, "create umem: fq: %d cq: %d size: %d, headroom=%d, chunk_size=%d\n",
 		fq_num, cq_num, mr.len, mr.headroom, mr.chunk_size);
 

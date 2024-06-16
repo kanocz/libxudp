@@ -20,6 +20,8 @@
 
 #include <arpa/inet.h>
 #include "log.h"
+#include "config.h"
+
 typedef __u64 u64;
 typedef __u32 u32;
 typedef __u16 u16;
@@ -55,9 +57,24 @@ struct packet_info {
 void xudp_packet_udp(struct packet_info *info);
 void xudp_packet_udp_payload(struct packet_info *info);
 
+#ifdef HW_TX_CSUM
+
+#define XDP_TX_METADATA_TIMESTAMP               (1 << 0)
+#define XDP_TX_METADATA_CHECKSUM                (1 << 1)
+
+#define XUDP_TX_HEADROOM (sizeof(struct xsk_tx_metadata) + \
+              sizeof(struct ethhdr) + 2 + \
+			  sizeof(struct ipv6hdr) + \
+			  sizeof(struct udphdr))
+#define TX_META_OFFSET (sizeof(struct xsk_tx_metadata))
+#else
 #define XUDP_TX_HEADROOM (sizeof(struct ethhdr) + 2 + \
 			  sizeof(struct ipv6hdr) + \
 			  sizeof(struct udphdr))
+#define TX_META_OFFSET 0
+#endif // HW_TX_CSUM
+
+
 #endif
 
 

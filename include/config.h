@@ -22,6 +22,8 @@
 
 #define BATCH_SIZE 1024
 
+#define HW_TX_CSUM 1
+
 #endif
 
 

@@ -451,6 +451,11 @@ static int xudp_send_tx(struct txch *txch, struct xudp_group *g,
 	desc->len = pkt->len;
 	desc->options = 0;
 
+#ifdef HW_TX_CSUM
+	desc->addr += sizeof(struct xsk_tx_metadata);
+	desc->options = XDP_TX_METADATA;
+#endif // HW_TX_CSUM
+
 	ret = xq_enq(&xsk->ring, desc, 1);
 	if (!ret)
 		goto success;

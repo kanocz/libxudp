@@ -11,10 +11,12 @@
  *
  */
 
+#include <linux/if_ether.h>
 #include <string.h>
 
 #include "packet.h"
 #include "checksum.h"
+#include "xudp_types.h"
 
 #define IP_XUDP_TTL 64
 #define IP_DF 0x4000
@@ -160,6 +162,9 @@ void xudp_packet_udp(struct packet_info *info)
 	struct ipv6hdr *iph6;
 	struct udphdr  *udp;
 	u32 size;
+#ifdef HW_TX_CSUM
+	struct xsk_tx_metadata *meta = (void *)info->head;
+#endif /* HW_TX_CSUM */
 
 	size = sizeof(*udp) + info->payload_size;
 
@@ -171,6 +176,12 @@ void xudp_packet_udp(struct packet_info *info)
 		eth_build(eth, info->smac, info->dmac, ETH_P_IP);
 		iph_build(iph, size, info->from, info->to);
 		udp_build(udp, size, info->from->sin_port, info->to->sin_port);
+
+#ifdef HW_TX_CSUM
+		meta->flags |= XDP_TX_METADATA_CHECKSUM;
+		meta->request.csum_start = sizeof(struct ethhdr) + sizeof(struct iphdr);
+		meta->request.csum_offset = offsetof(struct udphdr, check);
+#endif /* HW_TX_CSUM */
 
 		info->len = info->payload_size + IPV4_HEADROOM;
 	} else {
@@ -185,7 +196,14 @@ void xudp_packet_udp(struct packet_info *info)
 		 *
 		 * https://datatracker.ietf.org/doc/html/rfc2460#section-8.1
 		 */
+#ifdef HW_TX_CSUM
+		meta->flags |= XDP_TX_METADATA_CHECKSUM;
+		meta->request.csum_start = sizeof(struct ethhdr) + sizeof(struct ipv6hdr);
+		meta->request.csum_offset = offsetof(struct udphdr, check);
+#else
 		udp_csum6(udp, size, &info->from6->sin6_addr, &info->to6->sin6_addr);
+#endif /* HW_TX_CSUM */
+
 
 		info->len = info->payload_size + IPV6_HEADROOM;
 	}
